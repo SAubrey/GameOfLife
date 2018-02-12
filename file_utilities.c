@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdio.h>
-#include <io.h>
 
 // Created by Sean Aubrey on 2/9/2018.
 
