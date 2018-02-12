@@ -1,21 +1,27 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 // Created by Sean Aubrey on 2/9/2018.
 
-/* file_utilities.c saves and loads from txt file.
- * Readfile returns the size of the array read in if successful,
- * otherwise 1. Buffer is a ptr to an array, not a 2D array.
- *
- * Both currently only use a preset file name.
+/* file_utilities.c saves and loads from txt file. */
+
+/**
+ * If the file exists, this function gets its size and
+ * allocates memory accordingly under the passed in
+ * pointer. It fills this memory and returns the size of
+ * the array if successful, or 1 if not.
+ * Buffer is a ptr to a character array, not a 2D array.
+ * @param filename char* The file name destination.
+ * @param buffer char** Points to the array to be filled.
+ * @return size int The size of the file read.
  */
 int read_file(char *filename, char **buffer ) {
     FILE *fin;
-    filename = "state.txt";
+    filename[strlen(filename) - 1] = '\0';
     fin = fopen(filename, "r");
 
     int size = 0;
-    // Iterate through buffer to determine row/col sizes.
     if (filename == NULL || fin == NULL) {
         printf("File does not exist!\n");
         fclose(fin);
@@ -39,18 +45,20 @@ int read_file(char *filename, char **buffer ) {
     }
 }
 
-/*
- * If we have the size, which is row * col, then we can read the first row
- * and determine the number of columns. col = size/row
- * These are generic functions that can be used to read/write any array.
- * Row/col handling must occur in main.
+/**
+ * Writes characters from the passed in buffer to the file,
+ * for the number of characters as determined by size.
+ * @param filename char* The file name destination.
+ * @param buffer char* The char array to be read in.
+ * @param size int The number of characters to be read in.
+ * @return int 0 if successful.
  */
-int write_file(const char* filename, char *buffer, int size) {
+int write_file(char* filename, char *buffer, int size) {
     FILE *fout;
-    //fout = fopen(filename, "w");
-    fout = fopen("state.txt", "w");
+    filename[strlen(filename) - 1] = '\0';
+    fout = fopen(filename, "w");
 
-    if (filename == NULL || fout == NULL) {
+    if (fout == NULL) {
         printf("Not a valid file name!\n");
         fclose(fout);
         return 1;

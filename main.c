@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include "file_utilities.h"
 /*
  * JOHN CONWAY'S GAME OF LIFE
@@ -11,8 +10,12 @@
  * For CIS 343
  */
 /* Some references used. */
-/*  https://www.geeksforgeeks.org/dynamically-allocate-2d-array-c/  */
-/*  https://stackoverflow.com/questions/18688971/c-char-array-initialization  */
+/*
+ *  https://www.geeksforgeeks.org/dynamically-allocate-2d-array-c/
+ *  https://stackoverflow.com/questions/18688971/c-char-array-initialization
+ *  http://pubs.opengroup.org/onlinepubs/009695399/functions/fopen.html
+ *  Shared ideas with Ron Rounsifer (who is in the other 343 section).
+ */
 
 void createBoard(int r, int c);
 void printBoard(int r, int c);
@@ -20,39 +23,42 @@ void loadBoard();
 int saveBoard();
 int updateBoard(int n);
 int promptUser();
-int freeBoard();
+void freeBoard();
 int spawnCell(int x, int y);
 int getCBounds(int j, int c);
 
 int row = 0;
 int col = 0;
 int generations;
-char usrIn[10];
+char gens[10];
 
- /* Using board, determine the next game state onto tempBoard, then overwrite
- * board with tempBoard. */
+ /* Using board, determine the next game state onto tempBoard,
+  * then overwrite board with tempBoard. */
 char **board; // 2D array
 char **tempBoard;
-//char *fileName;
-char fileName[30];
+char fileName[40];
 
 /*
- * TODO: Toggle option for showing prompt text?
+ * Main takes in the command line arguments
+ * Number_of_rows, Number_of_columns.
+ * Though they are not necessary.
+ * It then enters a user input decision loop
+ * that persists for the life of the program.
  */
 int main(int argc, char const *argv[]) {
     printf("\n---Welcome to The Game of Life---\n\n");
-    printf("The future is in your hands...\n");
-    /*
-    if (argc != 2) {
-        printf("Usage: Number_of_rows Number_of_columns\n");
-        exit(1);
-    }
-    */
-    if (argc == 2) {
+    printf("Command line usage for a custom board size: \n");
+    printf("Usage: Number_of_rows  Number_of_columns\n");
+    printf("You can load from a text file or populate the default board. \n");
+    printf("Load the default and save to see the correct text format. \n");
+    printf("Replace '-' character with uppercase letter 'O'. \n\n");
+    printf("What would you like to do? \n");
+
+    if (argc == 3) {
         row = atoi(argv[1]);
         col = atoi(argv[2]);
         createBoard(row, col);
-
+        printBoard(row, col);
     }
 
     int x, y;
@@ -64,23 +70,20 @@ int main(int argc, char const *argv[]) {
                 break;
             case 2: // Update n generations
                 printf("Number of generations:\n");
-                fgets(usrIn, sizeof(usrIn), stdin);
-                generations = atoi(usrIn);
+                fgets(gens, sizeof(gens), stdin);
+                generations = atoi(gens);
                 updateBoard(generations);
                 break;
             case 3: // Save
                 //memset(fileName, 0, strlen(fileName));
-                printf("Save as?: (All files currently route to "
-                               "'state.txt', any input will do.)\n");
-                fgets(fileName, 31, stdin);
+                printf("Save as?: \n");
+                fgets(fileName, 40, stdin);
                 saveBoard();
                 break;
             case 4: // Load
                 //memset(fileName, 0, strlen(fileName));
-                //fileName = (char*)malloc(30 * sizeof(char));
-                printf("Load file name: (All files currently route to "
-                               "'state.txt', any input will do.)\n");
-                fgets(fileName, 31, stdin);
+                printf("Load file name: \n");
+                fgets(fileName, 40, stdin);
                 loadBoard();
                 break;
             case 5: // Default board
@@ -108,13 +111,7 @@ int main(int argc, char const *argv[]) {
     }
 } // end main
 
-int clearConsole(char *line) {
-    int len = strlen(line);
-    if (len > 0 && line[len - 1] == '\n')
-        line[--len] = '\0';
-}
-
-/*
+/**
  * This function generates the next game state based on the
  * current one. It iterates through the game board, and for
  * each element it iterates through a 3x3 grid to sum its
@@ -122,6 +119,8 @@ int clearConsole(char *line) {
  * smaller for elements on the edge of the grid. The number of
  * neighbors is then used to determine the state of the cell
  * in the next game state.
+ * @param n int The number of game state generations
+ * @return int 0 if successful.
  */
 int updateBoard(int n) {
     int g = 0;
@@ -144,7 +143,7 @@ int updateBoard(int n) {
         int r, c;
         int rcap, ccap;
         int neighbors;
-        /* For each cell, count the number of live cells around it. */
+        /* For each cell, count the number of live cells around it.*/
         for (i = 0; i < row; i++) {
             for (j = 0; j < col; j++) {
                 neighbors = 0;
@@ -156,7 +155,7 @@ int updateBoard(int n) {
                 ccap = j + 1; // right bound
 
                 /* Determine if a row or column must be cut
-                 * based on the position of the element in question. */
+                 * based on the position of the element in question.*/
                 if (i == 0) {
                     r++;
                 } else if (i == (row - 1)) { // account for +1 error
@@ -204,8 +203,12 @@ int updateBoard(int n) {
     return 0;
 }
 
-/*
- * Recalculates the column to begin searching for neighbors in.
+/**
+ * Recalculates the column to begin searching for
+ * neighbors in for a specific cell.
+ * @param j int of outer loop column.
+ * @param c int of local loop column.
+ * @return c int The re-set column number.
  */
 int getCBounds(int j, int c) {
     c = j - 1; // left bound
@@ -215,8 +218,9 @@ int getCBounds(int j, int c) {
     return c;
 }
 
-/*
+/**
  * Displays options, gets and returns input.
+ * @return int user selection choice
  */
 int promptUser() {
     int selection = 0;
@@ -237,8 +241,10 @@ int promptUser() {
     return selection;
 }
 
-/*
+/**
  * Loops through 2D array and prints each element.
+ * @param r int Number of rows
+ * @param c int Number of columns
  */
 void printBoard(int r, int c) {
     row = r;
@@ -253,11 +259,12 @@ void printBoard(int r, int c) {
     printf("\n");
 }
 
-/*
+/**
  * Funnels 2D array characters into 1-D array
  * to be sent to write_file. '.' Indicates the end
  * of a row, which is used to restructure the board in
  * loadBoard().
+ * @return int 0 if successful
  */
 int saveBoard() {
     int i, j = 0;
@@ -271,7 +278,6 @@ int saveBoard() {
 
     for (i = 0; i < row; i++) {
         for (j = 0; j < col; j++) {
-
             str[size] = board[i][j];
             size++;
         }
@@ -280,9 +286,10 @@ int saveBoard() {
     }
     write_file(fileName, str, size);
     printf("Game saved.\n");
+    return 0;
 }
 
-/*
+/**
  * This function gives read_file a string to fill from
  * file. Row and column sizes are then determined to build
  * the 2D array.
@@ -327,9 +334,12 @@ void loadBoard() {
     free(str);
 }
 
-/*Board is the address to an array of addresses,
+/**
+ * Board is the address to an array of addresses,
  * each of which is an address to the first element
  * of an array.
+ * @param r const int Number of rows
+ * @param c const int NUmber of columns
  */
 void createBoard(const int r, const int c) {
     int i, j;
@@ -353,15 +363,19 @@ void createBoard(const int r, const int c) {
     }
 }
 
-/*
- *
+/**
+ * Spawns a cell at the specified location between 1 to n inclusive.
+ * @param x const int x coordinate
+ * @param y const int y coordinate
+ * @return int 0 if successful
  */
 int spawnCell(const int x, const int y) {
     if (board == NULL) {
         printf("There's no board yet.\n");
         return 1;
     } else if (row < y || col < x || y < 1 || x < 1) {
-        printf("Outside of board boundaries X: (1 through %d) Y: (1 through %d)\n", col, row);
+        printf("Outside of board boundaries X: (1 through %d) "
+                       "Y: (1 through %d)\n", col, row);
         return 1;
     } else {
         printf("%d %d\n", x, y);
@@ -371,11 +385,11 @@ int spawnCell(const int x, const int y) {
     return 0;
 }
 
-/*
+/**
  * Free dynamically allocated board and tempBoard
  * unless they do not exist.
  */
-int freeBoard() {
+void freeBoard() {
     int i;
     if (board != NULL) {
         for (i = 0; i < row; i++) {
